@@ -46,13 +46,13 @@ command(
         header: cmdName,
         title: cmdName,
         description: cmd.desc || "No description",
-        id: _${cmdName},
+        id: _${cmdName}_,
       });
       menuData.button.push({
         type: "reply",
         params: {
           display_text: Click  ${cmdName} command,
-          id: _${cmdName},
+          id: _${cmdName}_,
         },
       });
     });
