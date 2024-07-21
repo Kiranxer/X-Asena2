@@ -1,106 +1,69 @@
+const { command, isPrivate } = require("../../lib");
 const plugins = require("../../lib/plugins");
-const { command, isPrivate, clockString, pm2Uptime } = require("../../lib");
-const { OWNER_NAME, BOT_NAME } = require("../../config");
-const { hostname } = require("os");
 
 command(
   {
     pattern: "menu",
-    fromMe: isPrivate,
-    desc: "Show All Commands",
-    dontAddCommandList: true,
-    type: "user",
+    fromMe: true,
+    desc: "Show menu with buttons",
+    usage: "#menu",
+    type: "message",
   },
-  async (message, match) => {
-   
-    if (match) {
-      for (let i of plugins.commands) {
-        if (
-          i.pattern instanceof RegExp &&
-          i.pattern.test(message.prefix + match)
-        ) {
-          const cmdName = i.pattern.toString().split(/\W+/)[1];
-          message.reply(`\`\`\`Command: ${message.prefix}${cmdName.trim()}
-Description: ${i.desc}\`\`\``);
-        }
-      }
-    } else {
-      let { prefix } = message;
-      let [date, time] = new Date()
-        .toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
-        .split(",");
-      let menu = `╭━━━━━ᆫ ${BOT_NAME} ᄀ━━━
-┃ ⎆  *OWNER*:  ${OWNER_NAME}
-┃ ⎆  *PREFIX*: ${prefix}
-┃ ⎆  *HOST NAME*: ${hostname().split("-")[0]}
-┃ ⎆  *DATE*: ${date}
-┃ ⎆  *TIME*: ${time}
-┃ ⎆  *COMMANDS*: ${plugins.commands.length} 
-┃ ⎆  *UPTIME*: ${clockString(process.uptime())} 
-╰━━━━━━━━━━━━━━━\n`;
-      let cmnd = [];
-      let cmd;
-      let category = [];
-      plugins.commands.map((command, num) => {
-        if (command.pattern instanceof RegExp) {
-          cmd = command.pattern.toString().split(/\W+/)[1];
-        }
+  async (message, match, m) => {
+    let menuData = {
+      jid: message.jid,
+      button: [], 
+      header: {
+        title: "My Bot",
+        subtitle: "Interactive Menu",
+        hasMediaAttachment: false,
+      },
+      footer: {
+        text: "Choose an option",
+      },
+      body: {
+        text: "Welcome to the menu!",
+      },
+    };
 
-        if (!command.dontAddCommandList && cmd !== undefined) {
-          let type = command.type ? command.type.toLowerCase() : "misc";
+    let commands = plugins.commands.filter(
+      (cmd) => !cmd.dontAddCommandList && cmd.pattern instanceof RegExp
+    );
+    let sections = [];
+    let currentSection = null;
 
-          cmnd.push({ cmd, type });
-
-          if (!category.includes(type)) category.push(type);
-        }
-      });
-      cmnd.sort();
-      category.sort().forEach((cmmd) => {
-        menu += `\n\t⦿---- *${cmmd.toUpperCase()}* ----⦿\n`;
-        let comad = cmnd.filter(({ type }) => type == cmmd);
-        comad.forEach(({ cmd }) => {
-          menu += `\n⛥  _${cmd.trim()}_ `;
+    commands.forEach((cmd) => {
+      let cmdName = cmd.pattern.toString().split(/W+/)[1];
+      let cmdType = cmd.type ? cmd.type.toLowerCase() : "misc";
+      if (cmdType !== currentSection) {
+        currentSection = cmdType;
+        sections.push({
+          title: cmdType.toUpperCase(),
+          rows: [],
         });
-        menu += `\n`;
+      }
+      sections[sections.length - 1].rows.push({
+        header: cmdName,
+        title: cmdName,
+        description: cmd.desc || "No description",
+        id: #${cmdName},
       });
-
-      menu += `\n`;
-      menu += `_🔖Send ${prefix}menu <command name> to get detailed information of a specific command._\n*📍Eg:* _${prefix}menu plugin_`;
-      return await message.sendMessage(message.jid,menu);
-    }
-  }
-);
-
-
-command(
-  {
-    pattern: "list",
-    fromMe: isPrivate,
-    desc: "Show All Commands",
-    type: "user",
-    dontAddCommandList: true,
-  },
-  async (message, match, { prefix }) => {
-    let menu = "\t\t```Command List```\n";
-
-    let cmnd = [];
-    let cmd, desc;
-    plugins.commands.map((command) => {
-      if (command.pattern) {
-        cmd = command.pattern.toString().split(/\W+/)[1];
-      }
-      desc = command.desc || false;
-
-      if (!command.dontAddCommandList && cmd !== undefined) {
-        cmnd.push({ cmd, desc });
-      }
+      menuData.button.push({
+        type: "reply",
+        params: {
+          display_text: Click for ${cmdName} command, // Customize this text
+          id: #${cmdName},
+        },
+      });
     });
-    cmnd.sort();
-    cmnd.forEach(({ cmd, desc }, num) => {
-      menu += `\`\`\`${(num += 1)} ${cmd.trim()}\`\`\`\n`;
-      if (desc) menu += `Use: \`\`\`${desc}\`\`\`\n\n`;
+    menuData.button.unshift({
+      type: "list",
+      params: {
+        title: "Menu Options",
+        sections: sections,
+      },
     });
-    menu += ``;
-    return await message.reply(menu);
+
+    return await message.sendMessage(message.jid, menuData, {}, "interactive");
   }
 );
