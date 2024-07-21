@@ -6,7 +6,7 @@ RUN apt-get update && \
     webp && \
     apt-get upgrade -y && \
     rm -rf /var/lib/apt/lists/*
-RUN git clone https://github.com/Kiranxer/X-Asena2
+RUN git clone https://github.com/Kiranxer/X-Asena2.git /xasena
 WORKDIR /xasena
 RUN npm install
 CMD ["node", "index.js"]
